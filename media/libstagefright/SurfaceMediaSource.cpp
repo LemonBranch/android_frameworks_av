@@ -371,12 +371,11 @@ status_t SurfaceMediaSource::read(
     return OK;
 }
 
-static buffer_handle_t getMediaBufferHandle(MediaBufferBase *buffer) {
+static ANativeWindowBuffer * getMediaBufferHandle(MediaBufferBase *buffer) {
     // need to convert to char* for pointer arithmetic and then
     // copy the byte stream into our handle
-    buffer_handle_t bufferHandle;
-    memcpy(&bufferHandle, (char*)(buffer->data()) + 4, sizeof(buffer_handle_t));
-    return bufferHandle;
+    VideoNativeMetadata *data = (VideoNativeMetadata *)(buffer->data());
+    return data->pBuffer;
 }
 
 void SurfaceMediaSource::signalBufferReturned(MediaBufferBase *buffer) {
@@ -386,10 +385,13 @@ void SurfaceMediaSource::signalBufferReturned(MediaBufferBase *buffer) {
 
     Mutex::Autolock lock(mMutex);
 
-    buffer_handle_t bufferHandle = getMediaBufferHandle(buffer);
+    ANativeWindowBuffer *bufferHandle = getMediaBufferHandle(buffer);
+
+    ALOGV("bufferHandle: %p", bufferHandle);
 
     for (size_t i = 0; i < mCurrentBuffers.size(); i++) {
-        if (mCurrentBuffers[i]->handle == bufferHandle) {
+        ALOGV("mCurrentBuffers[%zu]->NativeBuffer = %p", i, mCurrentBuffers[i]->getNativeBuffer());
+        if (mCurrentBuffers[i]->getNativeBuffer() == bufferHandle) {
             mCurrentBuffers.removeAt(i);
             foundBuffer = true;
             break;
@@ -405,9 +407,9 @@ void SurfaceMediaSource::signalBufferReturned(MediaBufferBase *buffer) {
             continue;
         }
 
-        if (bufferHandle == mSlots[id].mGraphicBuffer->handle) {
-            ALOGV("Slot %d returned, matches handle = %p", id,
-                    mSlots[id].mGraphicBuffer->handle);
+        if (bufferHandle == mSlots[id].mGraphicBuffer->getNativeBuffer()) {
+            ALOGV("Slot %d returned, matches NativeBuffer = %p", id,
+                    mSlots[id].mGraphicBuffer->getNativeBuffer());
 
             mConsumer->releaseBuffer(id, mSlots[id].mFrameNumber,
                                         EGL_NO_DISPLAY, EGL_NO_SYNC_KHR,

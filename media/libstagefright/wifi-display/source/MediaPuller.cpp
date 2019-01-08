@@ -182,6 +182,7 @@ void MediaPuller::onMessageReceived(const sp<AMessage> &msg) {
                     // with underlying data.
                     //accessUnit->setMediaBufferBase(mbuf);
                     accessUnit->meta()->setObject("mediaBufferHolder", new MediaBufferHolder(mbuf));
+                    mbuf->release();
                 }
 
                 sp<AMessage> notify = mNotify->dup();
