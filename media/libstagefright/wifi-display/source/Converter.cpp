@@ -21,12 +21,13 @@
 #include "Converter.h"
 
 #include "MediaPuller.h"
-#include "include/avc_utils.h"
+#include <media/stagefright/foundation/avc_utils.h>
 
 #include <cutils/properties.h>
 #include <gui/Surface.h>
 #include <media/ICrypto.h>
 #include <media/MediaCodecBuffer.h>
+#include <media/MediaBufferHolder.h>
 #include <media/stagefright/foundation/ABuffer.h>
 #include <media/stagefright/foundation/ADebug.h>
 #include <media/stagefright/foundation/AMessage.h>
@@ -305,7 +306,8 @@ void Converter::onMessageReceived(const sp<AMessage> &msg) {
                     sp<ABuffer> accessUnit;
                     CHECK(msg->findBuffer("accessUnit", &accessUnit));
 
-                    accessUnit->setMediaBufferBase(NULL);
+                    //accessUnit->setMediaBufferBase(NULL);
+                    accessUnit->meta()->setObject("mediaBufferHolder", new MediaBufferHolder(NULL));
                 }
                 break;
             }
@@ -328,7 +330,8 @@ void Converter::onMessageReceived(const sp<AMessage> &msg) {
                         ALOGI("dropping frame.");
                     }
 
-                    accessUnit->setMediaBufferBase(NULL);
+                    //accessUnit->setMediaBufferBase(NULL);
+                    accessUnit->meta()->setObject("mediaBufferHolder", new MediaBufferHolder(NULL));
                     break;
                 }
 
@@ -625,13 +628,20 @@ status_t Converter::feedEncoderInputBuffers() {
                    buffer->data(),
                    buffer->size());
 
-            MediaBuffer *mediaBuffer =
-                (MediaBuffer *)(buffer->getMediaBufferBase());
+            MediaBuffer *mediaBuffer = NULL;
+                //(MediaBuffer *)(buffer->getMediaBufferBase());
+            sp<RefBase> holder;
+            if (buffer->meta()->findObject("mediaBufferHolder", &holder)) {
+                mediaBuffer = (holder != nullptr) ?
+                        static_cast<MediaBuffer*>(static_cast<MediaBufferHolder*>(holder.get())->mediaBuffer()) : nullptr;
+            }
             if (mediaBuffer != NULL) {
-                mEncoderInputBuffers.itemAt(bufferIndex)->setMediaBufferBase(
-                        mediaBuffer);
+                //mEncoderInputBuffers.itemAt(bufferIndex)->setMediaBufferBase(
+                //        mediaBuffer);
+                mEncoderInputBuffers.itemAt(bufferIndex)->meta()->setObject("mediaBufferHolder", new MediaBufferHolder(mediaBuffer));
 
-                buffer->setMediaBufferBase(NULL);
+                //buffer->setMediaBufferBase(NULL);
+                buffer->meta()->setObject("mediaBufferHolder", new MediaBufferHolder(NULL));
             }
         } else {
             flags = MediaCodec::BUFFER_FLAG_EOS;
@@ -763,7 +773,7 @@ status_t Converter::doMoreWork() {
                 if (mNeedToManuallyPrependSPSPPS
                         && mIsH264
                         && (mFlags & FLAG_PREPEND_CSD_IF_NECESSARY)
-                        && IsIDR(buffer)) {
+                        && IsIDR(buffer->data(), buffer->size())) {
                     buffer = prependCSD(buffer);
                 }
 

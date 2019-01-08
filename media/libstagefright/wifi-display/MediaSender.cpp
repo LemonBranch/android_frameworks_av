@@ -23,7 +23,7 @@
 #include "rtp/RTPSender.h"
 #include "source/TSPacketizer.h"
 
-#include "include/avc_utils.h"
+#include <media/stagefright/foundation/avc_utils.h>
 
 #include <media/IHDCP.h>
 #include <media/stagefright/MediaBuffer.h>
@@ -400,7 +400,7 @@ status_t MediaSender::packetizeAccessUnit(
     bool manuallyPrependSPSPPS =
         !info.mIsAudio
         && (info.mFlags & FLAG_MANUALLY_PREPEND_SPS_PPS)
-        && IsIDR(accessUnit);
+        && IsIDR(accessUnit->data(), accessUnit->size());
 
     if (mHDCP != NULL && !info.mIsAudio) {
         isHDCPEncrypted = true;
