@@ -16,7 +16,7 @@
 
 #include "RemoteDisplay.h"
 
-#include "source/WifiDisplaySource.h"
+#include "../libstagefright/wifi-display/source/WifiDisplaySource.h"
 
 #include <media/IRemoteDisplayClient.h>
 #include <media/stagefright/foundation/ADebug.h>
