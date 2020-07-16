@@ -18,7 +18,7 @@
 
 #define WIFI_DISPLAY_SOURCE_H_
 
-#include "VideoFormats.h"
+#include "..VideoFormats.h"
 
 #include <media/stagefright/foundation/AHandler.h>
 #include <media/stagefright/foundation/ANetworkSession.h>
